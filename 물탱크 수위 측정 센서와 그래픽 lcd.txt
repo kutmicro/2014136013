@@ -1,0 +1,301 @@
+#include <math.h>  
+02.#include <Wire.h>               // I2C LCD  
+03.#include <LiquidCrystal_I2C.h>  // I2C LCD  
+04.  
+05.#define TRIG 11                 // 트리거 핀  
+06.#define ECHO 12                 // 에코 핀  
+07.#define BUZZER_PIN 10           // 부저 핀  
+08.#define SIZE_BAR (16 * 5)      // LCD 수위 표시 막대  
+09.  
+10./* 
+11.#define CYLINDER_CAPACITY_BASE (R_RADIUS * R_RADIUS * PI) // 원형 수조 용량 계산식 
+12.#define PI 3.1415926535898                                // 원형 수조 - 파이 값 
+13.#define R_RADIUS 50                                       // 원형 수조 - 반지름 (cm) 
+14.#define R_HEIGHT 146.0                                    // 원형 수조 - 높이 (cm) 
+15.*/  
+16.  
+17.#define SQUARE_CAPACITY_BASE (L_LENGTH * H_HEIGHT * W_WIDTH)/1000000  // 사각형 수조 용량 계산식  
+18.#define L_LENGTH 50.0                                                 // 사각형 수조 - 세로 (cm)  
+19.#define H_HEIGHT 100.0                                                // 사각형 수조 - 높이 (cm)  
+20.#define W_WIDTH 50.0                                                  // 사각형 수조 - 가로 (cm)  
+21.  
+22.#define DISTANCE_PLUS 10         // 초음파 센서의 측정 단위 (mm)  
+23.#define THRESHOLD_ALARM_1 10     // 최저수위값 알람 높이 (cm)  
+24.#define THRESHOLD_ALARM_2 100    // 최고수위값 알람 높이 (cm)  
+25.  
+26.//LiquidCrystal lcd(12, 11, 5, 4, 3, 2);  // LCD 인터페이스 핀 번호를 지정  
+27.LiquidCrystal_I2C lcd(0x27,16,2);         // LCD 메모리주소(0x27) 및 표시 가능한 열(16)과 행(2)을 설정  
+28.  
+29.volatile int mute = 0; // 부저 초기값 : 0 => 부저ON, 1 => 부저OFF  
+30.int LABEL = 1;  
+31.  
+32.// 그래픽문자 정의 : ˚C  
+33.byte newChar0[8] = {  
+34.  B01000,  
+35.  B10100,  
+36.  B01000,  
+37.  B00011,  
+38.  B00100,  
+39.  B00100,  
+40.  B00011,  
+41.  B00000  
+42.};  
+43.  
+44.// 그래픽문자 정의 : 스피커 아이콘   
+45.byte newChar1[8] = {  
+46.  B00001,  
+47.  B00011,  
+48.  B11101,  
+49.  B10001,  
+50.  B10001,  
+51.  B11101,  
+52.  B00011,  
+53.  B00001  
+54.};  
+55.  
+56.// 그래픽문자 정의 : 스피커 ON 아이콘   
+57.byte newChar2[8] = {  
+58.  B00010,  
+59.  B01001,  
+60.  B00101,  
+61.  B10101,  
+62.  B10101,  
+63.  B00101,  
+64.  B01001,  
+65.  B00010  
+66.};  
+67.  
+68.// 그래픽문자 정의 : 블럭  
+69.byte newChar3[8] = {  
+70.  B11111,  
+71.  B11111,  
+72.  B11111,  
+73.  B11111,  
+74.  B11111,  
+75.  B11111,  
+76.  B11111,  
+77.  B11111  
+78.};  
+79.  
+80.void setup() {  
+81.  attachInterrupt(0, ALARM_ICON, RISING); // 인트럽트 설정 : 0 => D2, 1 => D3  
+82.  lcd.init();       // LCD 초기화    
+83.  lcd.backlight();  // LCD 백라이트 설정  
+84.  lcd.begin(16, 2); // LCD 열, 행 정의  
+85.  lcd.createChar(0,newChar0);  
+86.  lcd.createChar(1,newChar1);  
+87.  lcd.createChar(2,newChar2);  
+88.  lcd.createChar(3,newChar3);  
+89.    
+90.  pinMode(BUZZER_PIN, OUTPUT);  
+91.      
+92.  Serial.begin(9600);  
+93.}  
+94.// 10Kohm NTC 온도센서 설정 시작  
+95.  double Thermister(int RawADC) {  
+96.  double Temp;  
+97.  Temp = log(((10240000/RawADC) - 10000));  
+98.  Temp = 1 / (0.001129148 + (0.000234125 * Temp) + (0.0000000876741 * Temp * Temp * Temp));  
+99.  Temp = Temp - 279.90; // <---- NTC 온도 보정시 수치를 수정  
+100.  return Temp;  
+101.// 10Kohm NTC 온도센서 설정 끝    
+102.}  
+103.  
+104.void loop() {  
+105. if (LABEL <=1){  
+106.    lcd.clear();  
+107.    lcd.setCursor(0, 0);   
+108.    lcd.print("Ultrasonic");  
+109.    lcd.setCursor(0, 1);   
+110.    lcd.print("Waterlevel Meter");  
+111.    delay(3000);  
+112.    }  
+113.    
+114.  LABEL =2;  
+115.    
+116.  long hWaterCm;  
+117.  int liters;  
+118.  
+119.  hWaterCm = read_height();  
+120.  if (check_alarm(hWaterCm) != 0) /* read again water height */  
+121.    hWaterCm = read_height();  
+122.  
+123.  lcd.clear();  
+124.  
+125.  print_histogram(hWaterCm);  
+126.    
+127.  lcd.setCursor(0, 1);  
+128.  String empty_t="Empty";  
+129.  String full_t="Full";  
+130.    
+131. if (hWaterCm >=100){ // 저수조 높이 (cm)  
+132.    lcd.print(full_t);  
+133.    lcd.setCursor(5, 1);  
+134.//    litres = floor(CYLINDER_CAPACITY_BASE * hWatherCm * 10); //원통형 수조  
+135.    liters = floor(SQUARE_CAPACITY_BASE * hWaterCm * 10);    //사각형 수조  
+136.    lcd.print(liters);  
+137.    lcd.print("L     ");  
+138.    Serial.print("Amount of Water : ");   
+139.    Serial.print(liters);   
+140.    Serial.println("L");  
+141.}  
+142.   
+143.  if (hWaterCm <=0){  
+144.    lcd.print(empty_t);  
+145.    lcd.setCursor(6, 1);  
+146.    Serial.print("Water level : ");   
+147.    Serial.println(empty_t);  
+148.    lcd.print("0");  
+149.    lcd.setCursor(7, 1);  
+150.    lcd.print("L");  
+151.    Serial.print("Amount of Water : 0");   
+152.    Serial.println("L");  
+153.      
+154.    lcd.setCursor(10, 1);  
+155.    double temp = Thermister(analogRead(0));  
+156.    lcd.print(temp,0); // 0=XX 또는 1=XX.X(소수점 표시)   
+157.    lcd.setCursor(12, 1);  
+158.    lcd.write(byte(0)); // ˚c 온도 기호  
+159.    Serial.print("temp : ");   
+160.    Serial.print(temp,1); // 0=XX 또는 1=XX.X(소수점 표시)   
+161.    Serial.println("C");  
+162.  }  
+163.      else {  
+164.    lcd.print(hWaterCm);  
+165.    lcd.print("cm ");  
+166.    Serial.print("Water level : ");   
+167.    Serial.print(hWaterCm);   
+168.    Serial.println("cm");  
+169.//    litres = floor(CYLINDER_CAPACITY_BASE * hWatherCm * 10); //원통형 수조  
+170.    liters = floor(SQUARE_CAPACITY_BASE * hWaterCm * 10);    //사각형 수조  
+171.    lcd.print(liters);   
+172.    lcd.print("L");  
+173.    Serial.print("Amount of Water : ");   
+174.    Serial.print(liters);   
+175.    Serial.println("L");  
+176.      
+177.    lcd.setCursor(10, 1);  
+178.    double temp = Thermister(analogRead(0));  
+179.    lcd.print(temp,0); // 0=XX 또는 1=XX.X(소수점 표시)   
+180.    lcd.setCursor(12, 1);  
+181.    lcd.write(byte(0)); // ˚온도 기호  
+182.      
+183.    Serial.print("temp : ");   
+184.    Serial.print(temp,1); // 0=XX 또는 1=XX.X(소수점 표시)   
+185.    Serial.println("˚C");  
+186.    }  
+187.      
+188.  lcd.setCursor(14, 1);  
+189.  lcd.write(byte(1)); // 스피커 아이콘  
+190.  lcd.setCursor(15, 1);  
+191.  if (!mute)  
+192.  lcd.write(byte(2)); // 스피커 ON 아이콘  
+193.  else  
+194.  lcd.print("x");  
+195.  
+196.  switch (check_alarm(hWaterCm)) {  
+197.  case 1: //full - alarm  
+198.    buzz(200);  
+199.    delay(100);  
+200.    buzz(200);  
+201.    delay(100);  
+202.    buzz(200);  
+203.    delay(100);  
+204.    buzz(200);  
+205.    delay(100);  
+206.    buzz(200);  
+207.    delay(100);  
+208.    buzz(200);  
+209.    delay(100);  
+210.    buzz(200);  
+211.    delay(100);  
+212.    buzz(200);  
+213.    break;  
+214.  
+215.  case 2: //empty - alarm  
+216.    buzz(200);  
+217.    delay(500);  
+218.    buzz(200);  
+219.    delay(500);  
+220.    break;  
+221.  
+222.  case 0: // no alarm  
+223.   delay(500);  
+224.  }  
+225.}  
+226.  
+227./* 디스플레이용  수위 히스토그램 막대 설정 */  
+228.void print_histogram(int hWaterCm) {  
+229.  int i;  
+230.  int bloks;  
+231.  float histogram;  
+232.    
+233.  histogram = (SIZE_BAR * hWaterCm) / H_HEIGHT;  
+234.  histogram = histogram + 0.5;  
+235.    
+236.  bloks = (int)histogram / 5;  
+237.  
+238.  for (i = 0; i < bloks; i++)  
+239.    lcd.write(byte(3)); // 그래픽문자 정의 : 블럭  
+240.  if ((int)(histogram) % 1 > 0)  
+241.    lcd.write((int)(histogram) % 1);  
+242.   
+243.}  
+244.  
+245.long read_height() {  
+246.  /* 
+247.   * 초음파 센서의 핑 설정 및 거리와 센티미터의 변수 설정,  
+248.   */  
+249.  long hWaterCm;  
+250.  
+251.  pinMode(TRIG, OUTPUT);  
+252.  digitalWrite(TRIG, LOW);  
+253.  delayMicroseconds(20);  
+254.  digitalWrite(TRIG, HIGH);  
+255.  delayMicroseconds(10);  
+256.  digitalWrite(TRIG, LOW);  
+257.  
+258.  pinMode(ECHO, INPUT);  
+259.  float distance = pulseIn(ECHO, HIGH);  
+260.  distance=distance / 29.387 / 2;  
+261.  Serial.print("Sensor Real Distance : ");  
+262.  Serial.print(distance);  
+263.  Serial.println("cm");  
+264.  Serial.println("------------------------------");  
+265.  delay(20);  
+266.   
+267.  hWaterCm = H_HEIGHT - distance + DISTANCE_PLUS;  
+268.  if (hWaterCm < 0)  
+269.    return 0;  
+270.  
+271.  if (hWaterCm > H_HEIGHT)  
+272.    return H_HEIGHT;  
+273.  
+274.  return hWaterCm;  
+275.}  
+276.  
+277.void buzz(int msec) {  
+278.  if (!mute)  
+279.  digitalWrite(BUZZER_PIN, HIGH);  
+280.  delay(msec);  
+281.  digitalWrite(BUZZER_PIN, LOW);  
+282.}  
+283.  
+284.int check_alarm(int hWaterCm) {  
+285.  if (hWaterCm >= THRESHOLD_ALARM_2) {  
+286.  return 1;}  
+287.  if (hWaterCm <= THRESHOLD_ALARM_1) {  
+288.  return 2;}  
+289.else {     
+290.return 0;}  
+291.}  
+292.  
+293.void ALARM_ICON() {  
+294.  if (mute == 1)  
+295.  mute = 0;  
+296.  else  
+297.  mute = 1;  
+298.}  
+
+[출처] 초음파센서(HC-SR04)를 이용한 물탱크 수위 측정기 만들기 (아두이노 스토리) |작성자 skyflower6
+
