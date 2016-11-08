@@ -23,9 +23,9 @@ void loop(){
 	long value = (50 ? distance) * (100 / 50)
 
 	lcd.clear();
-	lcd.print(¡°¹°ÀÇ ¾ç : ¡±);
+	lcd.print("water : ");
 	lcd.setCursor(0, 1);
 	lcd.print(value);
-	lcd.print(¡°%¡±);
+	lcd.print("%");
 	delay(500);
 }
