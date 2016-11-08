@@ -20,8 +20,9 @@ void loop(){
 	}
 
 	long distance = duration / 58.2;
-	long value = (50 ? distance) * (100 / 50)
-
+	long value = (50 - distance) * (100 / 50)
+	//물통의 길이가 50cm라고 가정
+	
 	lcd.clear();
 	lcd.print("water : ");
 	lcd.setCursor(0, 1);
