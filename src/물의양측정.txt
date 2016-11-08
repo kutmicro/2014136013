@@ -1,0 +1,31 @@
+#include <LiquidCrystal.h>
+
+LiquidCrystal lcd(12, 11, 2, 3, 4, 5)
+
+void setup(){
+	pinMode(8, OUTPUT);
+	pinMode(9, INPUT);
+	lcd.begin(16, 2);
+}
+
+void loop(){
+	digitalWrite(8, HIGH);
+	delayMicroseconds(10);
+	digitalWrite(8, LOW);
+
+	long duration = pulseIn(9, HIGH);
+
+	if(duration = 0){
+		return ;
+	}
+
+	long distance = duration / 58.2;
+	long value = (50 ? distance) * (100 / 50)
+
+	lcd.clear();
+	lcd.print(¡°¹°ÀÇ ¾ç : ¡±);
+	lcd.setCursor(0, 1);
+	lcd.print(value);
+	lcd.print(¡°%¡±);
+	delay(500);
+}
