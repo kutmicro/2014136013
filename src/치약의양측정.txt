@@ -21,12 +21,12 @@ void loop(){
 
 	long distance = duration / 58.2;
 	long value = (15 - distance) * (100 / 15)
-	//Ä¡¾àÀÇ Å©±â°¡ 15cm¶ó°í °¡Á¤
+	//ì¹˜ì•½ì˜ ê¸¸ì´ê°€ 15cmë¼ê³  ê°€ì •
 
 	lcd.clear();
-	lcd.print(¡°toothpaste : ¡±);
+	lcd.print(â€œtoothpaste : â€);
 	lcd.setCursor(0, 1);
 	lcd.print(value);
-	lcd.print(¡°%¡±);
+	lcd.print(â€œ%â€);
 	delay(500);
 }
