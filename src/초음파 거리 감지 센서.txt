@@ -1,7 +1,7 @@
-int trigPin=2;
-int echoPin=3;
+int trigPin=12;
+int echoPin=11;
 
-int pump_pin = 4;
+int pump_pin = 7;
 
 int pumb_flag_cur = 0;
 int pumb_flag_prev = 0;
