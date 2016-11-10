@@ -9,9 +9,9 @@ void setup(){
 }
 
 void loop(){
-	digitalWrite(12, HIGH);
+	digitalWrite(7, HIGH);
 	delayMicroseconds(10);
-	digitalWrite(12, LOW);
+	digitalWrite(7, LOW);
 
 	long duration = pulseIn(11, HIGH);
 
