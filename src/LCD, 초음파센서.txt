@@ -1,0 +1,84 @@
+#include "U8glib.h"
+ 
+U8GLIB_NHD_C12864 u8g(13, 11, 10, 9, 8);    // SPI Com: SCK = 13, MOSI = 11, CS = 10, CD = 9, RST = 8
+ 
+ 
+void draw(void) {
+  // graphic commands to redraw the complete screen should be placed here 
+  u8g.setFont(u8g_font_unifont);
+  //u8g.setFont(u8g_font_osb21);
+  u8g.drawStr( 0, 10, "water :     cm");
+  u8g.drawStr( 0, 30, "tooth :     cm");
+}
+void StartPage(){
+   u8g.drawStr(0,10,"ColdBrewSystem 0.9");
+   u8g.drawStr(0,25,"pashiran's");
+   u8g.drawStr(0,40,"workspace");
+   delay(500);
+} 
+ 
+void setup(void) {
+  u8g.setContrast(0); // Config the contrast to the best effect
+  u8g.setRot180();// rotate screen, if required
+  // set SPI backup if required
+  //u8g.setHardwareBackup(u8g_backup_avr_spi);
+ 
+  // assign default color value
+  if ( u8g.getMode() == U8G_MODE_R3G3B2 ) {
+    u8g.setColorIndex(255);     // white
+  }
+  else if ( u8g.getMode() == U8G_MODE_GRAY2BIT ) {
+    u8g.setColorIndex(3);         // max intensity
+  }
+  else if ( u8g.getMode() == U8G_MODE_BW ) {
+    u8g.setColorIndex(1);         // pixel on
+  }
+  else if ( u8g.getMode() == U8G_MODE_HICOLOR ) {
+    u8g.setHiColorByRGB(255,255,255);
+  }
+}
+ 
+void loop(void) {
+  // picture loop
+  u8g.firstPage(); 
+  do {
+    draw();
+  }
+  while( u8g.nextPage() );
+ 
+  // rebuild the picture after some delay
+  delay(500);
+}
+
+/*
+//초음파 센서의 핀번호를 설정한다.
+int echoPin = 12;
+int trigPin = 13;
+
+void setup() {
+  Serial.begin(9600);
+  // trig를 출력모드로 설정, echo를 입력모드로 설정
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+}
+
+void loop() {
+  float duration, distance;
+  
+  // 초음파를 보낸다. 다 보내면 echo가 HIGH 상태로 대기하게 된다.
+  digitalWrite(trigPin, HIGH);
+  delay(10);
+  digitalWrite(trigPin, LOW);
+  
+  // echoPin 이 HIGH를 유지한 시간을 저장 한다.
+  duration = pulseIn(echoPin, HIGH); 
+  // HIGH 였을 때 시간(초음파가 보냈다가 다시 들어온 시간)을 가지고 거리를 계산 한다.
+  distance = ((float)(340 * duration) / 10000) / 2;  
+  
+  Serial.print(distance);
+  Serial.println("cm");
+  // 수정한 값을 출력
+  delay(500);
+}
+*/
+    
