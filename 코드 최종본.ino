@@ -4,29 +4,29 @@
 #include "U8glib.h"
 #include <Stepper.h>
 
-//±×·¡ÇÈ LCDÀÇ ÇÉ¹øÈ£
+//ê·¸ë˜í”½ LCDì˜ í•€ë²ˆí˜¸
 U8GLIB_NHD_C12864 u8g(13, 11, 10, 9, 8);    // SPI Com: SCK = 13, MOSI = 11, CS = 10, CD = 9, RST = 8
-//½ºÅ×ÇÎ ¸ğÅÍÀÇ ÇÉ¹øÈ£
+//ìŠ¤í…Œí•‘ ëª¨í„°ì˜ í•€ë²ˆí˜¸
 int steps = 10;
 Stepper stepper0(steps, 3,4,5,6);
 int sSpeed = 1700;
 int myDelay = 10;
 
-//Ä©¼ÖÀ» °¨ÁöÇÏ´Â ÃÊÀ½ÆÄ ¼¾¼­ÀÇ ÇÉ¹øÈ£
+//ì¹«ì†”ì„ ê°ì§€í•˜ëŠ” ì´ˆìŒíŒŒ ì„¼ì„œì˜ í•€ë²ˆí˜¸
 int tooth_echoPin = 42;
 int tooth_trigPin = 43;
-//Á¾ÀÌÄÅÀ» °¨ÁöÇÏ´Â ÃÊÀ½ÆÄ ¼¾¼­ÀÇ ÇÉ¹øÈ£
+//ì¢…ì´ì»µì„ ê°ì§€í•˜ëŠ” ì´ˆìŒíŒŒ ì„¼ì„œì˜ í•€ë²ˆí˜¸
 int cup_echoPin = 46;
 int cup_trigPin = 47;
-//³²Àº ¹°ÀÇ ¾çÀ» ÃøÁ¤ÇÏ´Â ÃÊÀ½ÆÄ ¼¾¼­ÀÇ ÇÉ¹øÈ£
+//ë‚¨ì€ ë¬¼ì˜ ì–‘ì„ ì¸¡ì •í•˜ëŠ” ì´ˆìŒíŒŒ ì„¼ì„œì˜ í•€ë²ˆí˜¸
 int water_trigPin = 32;
 int water_echoPin = 33;
-//¿öÅÍÆßÇÁÀÇ ÇÉ¹øÈ£
+//ì›Œí„°íŒí”„ì˜ í•€ë²ˆí˜¸
 int water_pump_pin = 34;
 
 int viration = 22;
 
-int Bottle = 100;     //¹°ÅëÀÇ Å©±â
+int Bottle = 100;     //ë¬¼í†µì˜ í¬ê¸°
 int pumb_flag_cur = 0;
 int pumb_flag_prev = 0;
 int Timer;
@@ -119,7 +119,7 @@ void loop()
  float tooth_duration, tooth_distance;
  float cup_duration, cup_distance;
 
-  //Ä©¼ÖÀÇ À¯¹«¸¦ ÃøÁ¤
+  //ì¹«ì†”ì˜ ìœ ë¬´ë¥¼ ì¸¡ì •
   digitalWrite(tooth_trigPin, HIGH);
   delay(500);
   digitalWrite(tooth_trigPin, LOW);
@@ -129,7 +129,7 @@ void loop()
   Serial.print("tooth_distance : ");
   Serial.println(tooth_distance);
 
-  //Ä©¼ÖÀÌ °¡±îÀÌ ¿À¸é ½ºÅ×ÇÎ¸ğÅÍ¸¦ ÀÛµ¿
+  //ì¹«ì†”ì´ ê°€ê¹Œì´ ì˜¤ë©´ ìŠ¤í…Œí•‘ëª¨í„°ë¥¼ ì‘ë™
   if(tooth_distance < 5){
     stepper0.step(150);
     num = 5;
@@ -146,7 +146,7 @@ void loop()
       // rebuild the picture after some delay
       delay(500);
 
-  //Á¾ÀÌÄÅÀÇ À¯¹«¸¦ ÃøÁ¤
+  //ì¢…ì´ì»µì˜ ìœ ë¬´ë¥¼ ì¸¡ì •
   digitalWrite(cup_trigPin,LOW); 
   delayMicroseconds(2); 
   digitalWrite(cup_trigPin,HIGH); 
@@ -178,7 +178,7 @@ void loop()
   
       long water_duration, water_distance;
       
-      //³²Àº ¹°ÀÇ ¾ç ÃøÁ¤
+      //ë‚¨ì€ ë¬¼ì˜ ì–‘ ì¸¡ì •
       digitalWrite(water_trigPin, HIGH);
       delay(500);
       digitalWrite(water_trigPin, LOW);
